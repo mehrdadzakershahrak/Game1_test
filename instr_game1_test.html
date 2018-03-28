@@ -34,6 +34,12 @@
 
         <button type="button" style="display:block;padding:20px;height:100px; margin:auto">Start Game</button>
 
+        <script type='text/javascript'>
+            $('button').click(function (e) {
+                $.get('/game');
+            });
+        </script>
+
 
 </body>
 </html>
