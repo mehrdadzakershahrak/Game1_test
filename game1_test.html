@@ -199,6 +199,7 @@
         Character.prototype.moveUp = function (t) { this.tileTo[1] -= 1; this.timeMoved = t; this.direction = directions.up; this.lastMove = 'up'; };
         Character.prototype.moveDown = function (t) { this.tileTo[1] += 1; this.timeMoved = t; this.direction = directions.down; this.lastMove = 'down'; };
         Character.prototype.execMove = function (x, y, direction) {
+            this.plan.push({ Action: direction });
             switch (direction) {
                 case "up":
                     return this.moveUp(Date.now());
@@ -217,9 +218,12 @@
                 var playerY = Math.floor(this.position[1] / 40.0);
                 if (getTileType(playerX, playerY) == 2 && playerX == this.target.x && playerY == this.target.y) {
                     gameMap[playerX + playerY * 10] = 1;
-                    this.plan.push({ Action: `Room-visited`, explain: true });
+                    this.plan.push({ Action: `Room-visited` });
                     if (isAllVisited(gameMap)) {
-                        $.post("/", { path: this.plan }, data => $("#uuid").text(`Thanks for collaborating with the Robot! Here is your code: ${data}`));
+                        $.post("/game", { path: this.plan, mapId: mapId }, data => {
+                            sessionStorage.setItem('explainabilityUUID', data);
+                            window.location.href = '/questions';
+                        });
                     }
                     return this.resetTarget();
                 }
@@ -238,15 +242,6 @@
             }
         };
 
-        Character.prototype.confirmLastMove = function () {
-            if (this.lastMove) {
-                const conf = confirmAction(this.lastMove.charAt(0).toUpperCase() + this.lastMove.slice(1));
-                this.plan.push({ Action: this.lastMove, explain: conf });
-                if (!conf && confirm('Do you want to change the robot\'s target?')) {
-                    this.resetTarget();
-                }
-            }
-        }
 
         Character.prototype.getPlanSize = function () {
             return this.plan.length;
@@ -258,10 +253,6 @@
 
         function getTileType(x, y) {
             return gameMap[x + y * 10];
-        }
-
-        function confirmAction(action) {
-            return confirm(`Do you think the robot is doing the right thing?`);
         }
 
         function isAllVisited() {
@@ -297,22 +288,23 @@
             ctx.font = "bold 10pt sans-serif";
 
             $('#game').click(function (e) {
-                if (!player.target) {
-                    var offset = $('#game').offset();
-                    player.target = {
-                        x: Math.floor((e.clientX - offset.left) / 40.0),
-                        y: Math.floor((e.clientY - offset.top) / 40.0)
-                    };
-                    player.plan.push({ Action: `Human-Clicked (${player.target.x},${player.target.y})`, explain: true });
-                    let search = BFS(player.target.x + player.target.y * 10, Math.floor(player.position[0] / 40.0) + Math.floor(player.position[1] / 40.0) * 10);
-                    const path = [];
-                    while (!!search && search.parent != null) {
-                        path.push(search.move);
-                        search = search.parent;
-                    }
-                    player.stack = path;
-
+                var offset = $('#game').offset();
+                const target = {
+                    x: Math.floor((e.clientX - offset.left) / 40.0),
+                    y: Math.floor((e.clientY - offset.top) / 40.0)
+                };
+                if (gameMap[target.x + target.y * 10] != 2) {
+                    return;
                 }
+                player.target = target;
+                player.plan.push({ Action: `Human-Clicked (${player.target.x},${player.target.y})` });
+                let search = BFS(player.target.x + player.target.y * 10, player.tileTo[0] + player.tileTo[1] * 10);
+                const path = [];
+                while (!!search && search.parent != null) {
+                    path.push(search.move);
+                    search = search.parent;
+                }
+                player.stack = path;
             });
 
             tileset = new Image();
@@ -345,7 +337,6 @@
 
             player.moving = player.processMovement(currentFrameTime);
             if (!player.moving && player.target) {
-                player.confirmLastMove();
                 player.moveToLocation();
             }
             ctx.fillStyle = "#000000";
