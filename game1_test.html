@@ -97,7 +97,7 @@
         function setMap(id) {
             const map = maps[id];
             mapId = id;
-            player.position = map.start;
+            player.position = [...map.start];
             player.tileFrom = map.start.map(px => Math.floor(px / 40.0));
             player.tileTo = map.start.map(px => Math.floor(px / 40.0));
             map.gameMap.map((tile, i) => [tile, { x: i % 8, y: Math.floor(i / 8) }]).filter(tile => tile[0] == 2).forEach((tile, i) => rooms[tile[1].x + tile[1].y * 6 - 6] = i + 1);
@@ -115,7 +115,7 @@
             this.timeMoved = 0;
             this.dimensions = [30, 30];
             this.position = [45, 45];
-            this.delayMove = 700;
+            this.delayMove = 1000;
             this.direction = directions.up;
 
             this.sprites = {};
@@ -215,10 +215,11 @@
                     gameMap[playerX + playerY * 8] = 1;
                     this.plan.push({ Action: `Room-visited` });
                     if (isAllVisited(gameMap)) {
-                        $.post("/game", { path: this.convertPlan(), mapId: mapId }, data => {
-                            sessionStorage.setItem('explainabilityUUID', data);
-                            window.location.href = '/questions';
-                        });
+                        console.log(this.convertPlan());
+                        // $.post("/game", { path: this.convertPlan(), mapId: mapId }, data => {
+                        //     sessionStorage.setItem('explainabilityUUID', data);
+                        //     window.location.href = '/questions';
+                        // });
                     }
                     return this.resetTarget();
                 }
@@ -354,8 +355,6 @@
                 player.position[1],
                 player.dimensions[0], player.dimensions[1]);
 
-            ctx.fillStyle = "#ff0000";
-            ctx.fillText("FPS: " + framesLastSecond, 10, 20);
 
             lastFrameTime = currentFrameTime;
             requestAnimationFrame(drawGame);
