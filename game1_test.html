@@ -215,11 +215,10 @@
                     gameMap[playerX + playerY * 8] = 1;
                     this.plan.push({ Action: `Room-visited` });
                     if (isAllVisited(gameMap)) {
-                        console.log(this.convertPlan());
-                        // $.post("/game", { path: this.convertPlan(), mapId: mapId }, data => {
-                        //     sessionStorage.setItem('explainabilityUUID', data);
-                        //     window.location.href = '/questions';
-                        // });
+                        $.post("/game", { path: this.convertPlan(), mapId: mapId }, data => {
+                            sessionStorage.setItem('explainabilityUUID', data);
+                            window.location.href = '/questions';
+                        });
                     }
                     return this.resetTarget();
                 }
